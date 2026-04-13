@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0a0e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Ninatxicoe ♥</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="loading-heart">♥</div>
+      <h1 class="loading-title">Ninatxicoe</h1>
+      <p class="loading-sub">cargando vuestro mundo…</p>
+    </div>
+  </div>
+
+  <!-- VIAJE START ANIMATION -->
+  <div id="viaje-start-overlay" class="hidden">
+    <div class="viaje-start-bg"></div>
+    <div class="viaje-start-content">
+      <div class="viaje-start-plane">✈️</div>
+      <div class="viaje-start-label">¡Habéis empezado el viaje a</div>
+      <h1 id="viaje-start-destino"></h1>
+      <div class="viaje-start-sub">¡Que sea increíble! 🌍</div>
+    </div>
+  </div>
+
+  <!-- THEME PANEL -->
+  <div id="panel-overlay" class="hidden" onclick="closeThemePanel()"></div>
+  <div id="theme-panel" class="side-panel hidden">
+    <div class="panel-header">
+      <h3>Personalizar</h3>
+      <button class="icon-btn" onclick="closeThemePanel()">✕</button>
+    </div>
+    <div class="panel-body">
+      <p class="panel-section-title">Tema</p>
+      <div class="theme-grid">
+        <button class="theme-swatch active" data-theme="dark-romantic" onclick="setTheme('dark-romantic')">
+          <span class="swatch-preview swatch-dark-romantic"></span>
+          <span>Romántico</span>
+        </button>
+        <button class="theme-swatch" data-theme="light-elegant" onclick="setTheme('light-elegant')">
+          <span class="swatch-preview swatch-light-elegant"></span>
+          <span>Claro</span>
+        </button>
+        <button class="theme-swatch" data-theme="forest" onclick="setTheme('forest')">
+          <span class="swatch-preview swatch-forest"></span>
+          <span>Bosque</span>
+        </button>
+        <button class="theme-swatch" data-theme="ocean" onclick="setTheme('ocean')">
+          <span class="swatch-preview swatch-ocean"></span>
+          <span>Océano</span>
+        </button>
+      </div>
+      <p class="panel-section-title" style="margin-top:24px">Color acento</p>
+      <div class="color-picker-row">
+        <input type="color" id="custom-accent" value="#c9a84c" oninput="setCustomAccent(this.value)">
+        <span id="custom-accent-hex">#c9a84c</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app">
+
+    <!-- HEADER -->
+    <header id="app-header">
+      <div class="header-left">
+        <h1 class="app-title">Ninatxicoe <span class="heart-icon">♥</span></h1>
+      </div>
+      <button class="icon-btn theme-toggle-btn" onclick="openThemePanel()" title="Personalizar">🎨</button>
+    </header>
+
+    <!-- TAB SECTIONS -->
+    <main id="tab-content">
+
+      <!-- MAPA -->
+      <section id="tab-mapa" class="tab-section active">
+        <div id="map"></div>
+      </section>
+
+      <!-- RUTAS -->
+      <section id="tab-rutas" class="tab-section">
+        <div class="section-header">
+          <h2>Rutas</h2>
+          <button class="btn-add" onclick="openLugarModal('ruta')">+ Añadir</button>
+        </div>
+        <div id="rutas-list" class="items-list"></div>
+      </section>
+
+      <!-- RESTAURANTES -->
+      <section id="tab-restaurantes" class="tab-section">
+        <div class="section-header">
+          <h2>Restaurantes</h2>
+          <button class="btn-add" onclick="openLugarModal('restaurante')">+ Añadir</button>
+        </div>
+        <div id="restaurantes-list" class="items-list"></div>
+      </section>
+
+      <!-- PLANES -->
+      <section id="tab-planes" class="tab-section">
+        <div class="section-header">
+          <h2>Planes</h2>
+          <button class="btn-add" onclick="openLugarModal('plan')">+ Añadir</button>
+        </div>
+        <div id="planes-list" class="items-list"></div>
+      </section>
+
+      <!-- PELIS -->
+      <section id="tab-pelis" class="tab-section">
+        <div class="section-header">
+          <h2>Películas</h2>
+          <button class="btn-add" onclick="openPeliModal()">+ Añadir</button>
+        </div>
+        <div id="pelis-pendientes" class="items-list">
+          <p class="list-label">Por ver</p>
+          <div id="pelis-pendientes-list"></div>
+        </div>
+        <div id="pelis-vistas" class="items-list" style="margin-top:16px">
+          <p class="list-label">Vistas</p>
+          <div id="pelis-vistas-list"></div>
+        </div>
+      </section>
+
+      <!-- VIAJES -->
+      <section id="tab-viajes" class="tab-section">
+        <!-- Vista principal viajes -->
+        <div id="viajes-main-view">
+          <div class="section-header">
+            <h2>Viajes</h2>
+            <button class="btn-add" onclick="openViajeModal()">+ Nuevo</button>
+          </div>
+          <div id="viajes-en-curso" class="items-list">
+            <p class="list-label">En curso ✈️</p>
+            <div id="viajes-curso-list"></div>
+          </div>
+          <div id="viajes-pendientes-wrap" class="items-list" style="margin-top:16px">
+            <p class="list-label">Planeados</p>
+            <div id="viajes-pendientes-list"></div>
+          </div>
+          <div id="viajes-completados-wrap" class="items-list" style="margin-top:16px">
+            <p class="list-label">Completados</p>
+            <div id="viajes-completados-list"></div>
+          </div>
+        </div>
+
+        <!-- Vista diario de viaje -->
+        <div id="viaje-diario-view" class="hidden">
+          <div class="diario-header">
+            <button class="back-link" onclick="closeDiario()">← Volver</button>
+            <div class="diario-header-right">
+              <h2 id="diario-destino-title"></h2>
+              <span id="diario-estado-badge"></span>
+            </div>
+          </div>
+          <div id="diario-days-list"></div>
+          <div id="diario-actions" class="diario-actions hidden">
+            <button class="btn-add-day" onclick="openDiaModal()">+ Añadir día</button>
+            <button class="btn-finalizar" onclick="finalizarViaje()">Finalizar viaje</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav id="bottom-nav">
+      <button class="nav-item active" data-tab="mapa" onclick="switchTab('mapa')">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Mapa</span>
+      </button>
+      <button class="nav-item" data-tab="rutas" onclick="switchTab('rutas')">
+        <span class="nav-icon">🏔️</span>
+        <span class="nav-label">Rutas</span>
+      </button>
+      <button class="nav-item" data-tab="restaurantes" onclick="switchTab('restaurantes')">
+        <span class="nav-icon">🍴</span>
+        <span class="nav-label">Restaurantes</span>
+      </button>
+      <button class="nav-item" data-tab="planes" onclick="switchTab('planes')">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Planes</span>
+      </button>
+      <button class="nav-item" data-tab="pelis" onclick="switchTab('pelis')">
+        <span class="nav-icon">🎬</span>
+        <span class="nav-label">Pelis</span>
+      </button>
+      <button class="nav-item" data-tab="viajes" onclick="switchTab('viajes')">
+        <span class="nav-icon">✈️</span>
+        <span class="nav-label">Viajes</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Modal: Lugar (ruta / restaurante / plan) -->
+  <div id="lugar-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'lugar-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="lugar-modal-title">Añadir lugar</h3>
+        <button class="icon-btn" onclick="closeModal('lugar-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="lugar-tipo-input">
+        <input type="hidden" id="lugar-edit-id">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="lugar-nombre" placeholder="Ej: Montserrat">
+        </div>
+        <div class="form-group">
+          <label>Ubicación *</label>
+          <input type="text" id="lugar-ubicacion" placeholder="Ej: Montserrat, Catalunya">
+          <span class="form-hint">Se geolocaliza automáticamente al guardar</span>
+        </div>
+        <div class="form-group">
+          <label>URL Google Maps (opcional)</label>
+          <input type="url" id="lugar-maps-url" placeholder="https://maps.google.com/...">
+        </div>
+        <div class="form-group">
+          <label>Notas (opcional)</label>
+          <textarea id="lugar-notas" placeholder="Ideas, detalles..." rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('lugar-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveLugar()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Reseña -->
+  <div id="resena-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'resena-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Reseña</h3>
+        <button class="icon-btn" onclick="closeModal('resena-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="resena-lugar-id">
+        <div class="form-group">
+          <label>¿Qué tal estuvo?</label>
+          <textarea id="resena-texto" placeholder="Notas, sensaciones, recuerdos..." rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label>URL Foto (Google Fotos u otra)</label>
+          <input type="url" id="resena-foto-url" placeholder="https://photos.google.com/...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('resena-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveResena()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Película -->
+  <div id="peli-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'peli-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="peli-modal-title">Añadir Película</h3>
+        <button class="icon-btn" onclick="closeModal('peli-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="peli-edit-id">
+        <div class="form-group">
+          <label>Título *</label>
+          <input type="text" id="peli-titulo" placeholder="Ej: Dune">
+        </div>
+        <div class="form-group toggle-group">
+          <label class="toggle-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="peli-vista-toggle" onchange="togglePeliVista()">
+              <span class="toggle-track"></span>
+            </div>
+            Ya la hemos visto
+          </label>
+        </div>
+        <div id="peli-vista-fields" class="hidden">
+          <div class="form-group">
+            <label>Puntuación</label>
+            <div class="stars-input" id="stars-input">
+              <span class="star" data-val="1">★</span>
+              <span class="star" data-val="2">★</span>
+              <span class="star" data-val="3">★</span>
+              <span class="star" data-val="4">★</span>
+              <span class="star" data-val="5">★</span>
+            </div>
+            <input type="hidden" id="peli-puntuacion" value="0">
+          </div>
+          <div class="form-group">
+            <label>Reseña</label>
+            <textarea id="peli-resena" placeholder="¿Qué os pareció?" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('peli-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="savePeli()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo Viaje -->
+  <div id="viaje-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'viaje-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Nuevo Viaje</h3>
+        <button class="icon-btn" onclick="closeModal('viaje-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Destino *</label>
+          <input type="text" id="viaje-destino" placeholder="Ej: Bali, Indonesia">
+        </div>
+        <div class="form-group">
+          <label>Fecha prevista (opcional)</label>
+          <input type="date" id="viaje-fecha">
+        </div>
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea id="viaje-notas" placeholder="Ideas, planes, sueños..." rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('viaje-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveViaje()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Día del diario -->
+  <div id="dia-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'dia-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="dia-modal-title">Día del viaje</h3>
+        <button class="icon-btn" onclick="closeModal('dia-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="dia-viaje-id">
+        <input type="hidden" id="dia-edit-id">
+        <input type="hidden" id="dia-num-input">
+        <div class="form-group">
+          <label>Título</label>
+          <input type="text" id="dia-titulo" placeholder="Ej: Llegada a Ubud">
+        </div>
+        <div class="form-group">
+          <label>Diario del día</label>
+          <textarea id="dia-notas" placeholder="Cómo fue el día, qué vivisteis, qué sentisteis..." rows="5"></textarea>
+        </div>
+        <div class="form-group">
+          <label>URLs de fotos (una por línea)</label>
+          <textarea id="dia-fotos" placeholder="https://photos.google.com/...&#10;https://..." rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('dia-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveDia()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- App -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/mapa.js"></script>
+  <script src="js/viajes.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
