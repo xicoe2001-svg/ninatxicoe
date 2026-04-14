@@ -1,19 +1,15 @@
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBpQoeJHKAQaBdFhzXKsgNhUkyX4oC_4rY",
-  authDomain: "ninatxicoe.firebaseapp.com",
-  projectId: "ninatxicoe",
-  storageBucket: "ninatxicoe.firebasestorage.app",
-  messagingSenderId: "998657947207",
-  appId: "1:998657947207:web:b00ee5237c9fffedeba362",
-  measurementId: "G-T5C3NYB8DV"
+  apiKey: "AIzaSyABW7sXsOm8p5SyEMg5invEBCuePkp80WM",
+  authDomain: "ninaatxicoee.firebaseapp.com",
+  projectId: "ninaatxicoee",
+  storageBucket: "ninaatxicoee.firebasestorage.app",
+  messagingSenderId: "183447594894",
+  appId: "1:183447594894:web:087c927e1823721a5926df"
 };
 
 firebase.initializeApp(firebaseConfig);
-
-// Apuntar a la base de datos eur3
 const db = firebase.firestore();
-db.settings({ databaseId: 'eur3' });
 
 // Caché offline
 db.enablePersistence({ synchronizeTabs: true }).catch(err => {
