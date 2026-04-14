@@ -414,29 +414,32 @@ function hoverStars(n) {
 
 function resetStars() { setStars(0); }
 
+// ===== HIDE LOADING =====
+function hideLoading() {
+  const ls = document.getElementById('loading-screen');
+  if (!ls || ls.style.display === 'none') return;
+  ls.classList.add('fade-out');
+  setTimeout(() => { ls.style.display = 'none'; }, 700);
+}
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme
-  loadTheme();
+  // Hard fallback — always hide loading after 3s no matter what
+  setTimeout(hideLoading, 3000);
 
-  // Init map
-  initMap();
+  try { loadTheme(); } catch(e) { console.warn('Theme error:', e); }
+  try { initMap(); }   catch(e) { console.warn('Map error:', e); }
 
-  // Listeners
-  listenLugares();
-  listenPelis();
-  listenViajes();
+  try { listenLugares(); } catch(e) { console.warn('Lugares error:', e); }
+  try { listenPelis(); }   catch(e) { console.warn('Pelis error:', e); }
+  try { listenViajes(); }  catch(e) { console.warn('Viajes error:', e); }
 
-  // Stars
-  initStars();
+  try { initStars(); } catch(e) { console.warn('Stars error:', e); }
 
-  // Vista toggle modal binding
-  document.getElementById('peli-vista-toggle').addEventListener('change', togglePeliVistaModal);
+  try {
+    document.getElementById('peli-vista-toggle').addEventListener('change', togglePeliVistaModal);
+  } catch(e) {}
 
-  // Hide loading screen
-  setTimeout(() => {
-    const ls = document.getElementById('loading-screen');
-    ls.classList.add('fade-out');
-    setTimeout(() => ls.style.display = 'none', 700);
-  }, 1200);
+  // Normal hide after 1.4s
+  setTimeout(hideLoading, 1400);
 });
