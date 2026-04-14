@@ -10,9 +10,17 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
-// Geocoding via Nominatim (OpenStreetMap) — no API key needed
+// Apuntar a la base de datos eur3
+const db = firebase.firestore();
+db.settings({ databaseId: 'eur3' });
+
+// Caché offline
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  console.warn('Persistencia no disponible:', err.code);
+});
+
+// Geocoding via Nominatim (OpenStreetMap)
 async function geocode(query) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=es`;
