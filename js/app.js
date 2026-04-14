@@ -26,15 +26,11 @@ function handleModalOverlayClick(e, id) {
 let currentTab = 'mapa';
 
 function switchTab(tab) {
-  // Deactivate old
   document.querySelector(`#tab-${currentTab}`)?.classList.remove('active');
   document.querySelector(`.nav-item[data-tab="${currentTab}"]`)?.classList.remove('active');
-
-  // Activate new
   currentTab = tab;
   document.querySelector(`#tab-${tab}`)?.classList.add('active');
   document.querySelector(`.nav-item[data-tab="${tab}"]`)?.classList.add('active');
-
   if (tab === 'mapa') invalidateMapSize();
 }
 
@@ -42,21 +38,19 @@ function switchTab(tab) {
 function loadTheme() {
   const saved = localStorage.getItem('ninatxicoe_theme') || 'dark-romantic';
   const accent = localStorage.getItem('ninatxicoe_accent');
-  applyTheme(saved, false);
+  applyTheme(saved);
   if (accent) applyCSSAccent(accent);
 }
 
 function setTheme(name) {
-  applyTheme(name, true);
+  applyTheme(name);
   localStorage.setItem('ninatxicoe_theme', name);
-  // Update active swatch
   document.querySelectorAll('.theme-swatch').forEach(s => {
     s.classList.toggle('active', s.dataset.theme === name);
   });
 }
 
-function applyTheme(name, save) {
-  document.documentElement.setAttribute('data-theme', name === 'dark-romantic' ? '' : name);
+function applyTheme(name) {
   if (name === 'dark-romantic') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', name);
 }
@@ -92,9 +86,9 @@ function closeThemePanel() {
 let lugaresData = {};
 
 const TIPO_CONFIG = {
-  ruta:        { emoji: '🏔️', label: 'Ruta', listId: 'rutas-list' },
+  ruta:        { emoji: '🏔️', label: 'Ruta',        listId: 'rutas-list' },
   restaurante: { emoji: '🍴', label: 'Restaurante', listId: 'restaurantes-list' },
-  plan:        { emoji: '🎯', label: 'Plan', listId: 'planes-list' }
+  plan:        { emoji: '🎯', label: 'Plan',         listId: 'planes-list' }
 };
 
 function listenLugares() {
@@ -102,7 +96,7 @@ function listenLugares() {
     lugaresData = {};
     snapshot.forEach(doc => { lugaresData[doc.id] = { id: doc.id, ...doc.data() }; });
     renderAllLugares();
-  });
+  }, err => console.warn('Lugares error:', err));
 }
 
 function renderAllLugares() {
@@ -115,6 +109,7 @@ function renderAllLugares() {
 function renderLugarList(tipo, items) {
   const cfg = TIPO_CONFIG[tipo];
   const el = document.getElementById(cfg.listId);
+  if (!el) return;
 
   if (!items.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">${cfg.emoji}</div><p>Todavía no hay ${cfg.label.toLowerCase()}s</p></div>`;
@@ -131,7 +126,6 @@ function renderLugarList(tipo, items) {
     const resenaBtn = l.completado
       ? `<button class="icon-btn ${l.resena ? 'active' : ''}" title="Reseña" onclick="openResenaModal('${l.id}')">📝</button>`
       : '';
-
     const resenaPreview = l.resena
       ? `<div class="item-resena-preview">"${escHtml(l.resena.substring(0,120))}${l.resena.length > 120 ? '…' : ''}"</div>`
       : '';
@@ -194,33 +188,34 @@ async function saveLugar() {
   const tipo   = document.getElementById('lugar-tipo-input').value;
   const editId = document.getElementById('lugar-edit-id').value;
 
-  const btn = document.querySelector('#lugar-modal .btn-primary');
-  btn.disabled = true; btn.textContent = 'Guardando…';
-
-  const coords = await geocode(ubicacion);
-
   const data = {
     nombre,
     tipo,
     ubicacion,
-    maps_url:  document.getElementById('lugar-maps-url').value.trim(),
-    notas:     document.getElementById('lugar-notas').value.trim(),
-    lat:       coords ? coords.lat : null,
-    lng:       coords ? coords.lng : null,
+    maps_url: document.getElementById('lugar-maps-url').value.trim(),
+    notas:    document.getElementById('lugar-notas').value.trim(),
+    lat: null,
+    lng: null,
   };
 
+  let docRef;
   if (editId) {
     await db.collection('lugares').doc(editId).update(data);
+    docRef = db.collection('lugares').doc(editId);
   } else {
-    data.completado  = false;
-    data.resena      = '';
-    data.foto_url    = '';
-    data.createdAt   = firebase.firestore.FieldValue.serverTimestamp();
-    await db.collection('lugares').add(data);
+    data.completado = false;
+    data.resena     = '';
+    data.foto_url   = '';
+    data.createdAt  = firebase.firestore.FieldValue.serverTimestamp();
+    docRef = await db.collection('lugares').add(data);
   }
 
   closeModal('lugar-modal');
-  btn.disabled = false; btn.textContent = 'Guardar';
+
+  // Geocoding en segundo plano — no bloquea
+  geocode(ubicacion).then(coords => {
+    if (coords) docRef.update({ lat: coords.lat, lng: coords.lng });
+  });
 }
 
 async function toggleCompletado(id, value) {
@@ -232,7 +227,6 @@ async function deleteLugar(id) {
   await db.collection('lugares').doc(id).delete();
 }
 
-// Reseña
 function openResenaModal(id) {
   const l = lugaresData[id];
   if (!l) return;
@@ -243,15 +237,12 @@ function openResenaModal(id) {
 }
 
 async function saveResena() {
-  const id = document.getElementById('resena-lugar-id').value;
+  const id    = document.getElementById('resena-lugar-id').value;
   const texto = document.getElementById('resena-texto').value.trim();
   const foto  = document.getElementById('resena-foto-url').value.trim();
-
-  const btn = document.querySelector('#resena-modal .btn-primary');
+  const btn   = document.querySelector('#resena-modal .btn-primary');
   btn.disabled = true; btn.textContent = 'Guardando…';
-
   await db.collection('lugares').doc(id).update({ resena: texto, foto_url: foto });
-
   closeModal('resena-modal');
   btn.disabled = false; btn.textContent = 'Guardar';
 }
@@ -264,22 +255,24 @@ function listenPelis() {
     pelisData = {};
     snapshot.forEach(doc => { pelisData[doc.id] = { id: doc.id, ...doc.data() }; });
     renderPelis();
-  });
+  }, err => console.warn('Pelis error:', err));
 }
 
 function renderPelis() {
-  const vistas    = Object.values(pelisData).filter(p => p.vista);
-  const pendientes= Object.values(pelisData).filter(p => !p.vista);
+  const vistas     = Object.values(pelisData).filter(p => p.vista);
+  const pendientes = Object.values(pelisData).filter(p => !p.vista);
 
   renderPelisList('pelis-pendientes-list', pendientes, false);
   renderPelisList('pelis-vistas-list',     vistas,     true);
 
   document.getElementById('pelis-pendientes').style.display = pendientes.length ? '' : 'none';
-  document.getElementById('pelis-vistas').style.display = vistas.length ? '' : 'none';
+  document.getElementById('pelis-vistas').style.display     = vistas.length     ? '' : 'none';
 }
 
 function renderPelisList(containerId, pelis, vistas) {
   const el = document.getElementById(containerId);
+  if (!el) return;
+
   if (!pelis.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎬</div><p>${vistas ? 'Nada visto aún' : 'Lista vacía'}</p></div>`;
     return;
@@ -303,8 +296,8 @@ function renderPelisList(containerId, pelis, vistas) {
             ${stars}
           </div>
           <div class="item-actions">
-            <button class="btn-check ${p.vista ? 'checked' : ''}" title="${toggleTitle}" onclick="togglePeliVista('${p.id}',${!p.vista})">${toggleLabel}</button>
-            <button class="icon-btn ${p.resena ? 'active' : ''}" title="Reseña" onclick="editPeli('${p.id}')">✏️</button>
+            <button class="btn-check ${p.vista ? 'checked' : ''}" title="${toggleTitle}" onclick="togglePeliVistaDB('${p.id}',${!p.vista})">${toggleLabel}</button>
+            <button class="icon-btn ${p.resena ? 'active' : ''}" title="Editar" onclick="editPeli('${p.id}')">✏️</button>
             <button class="icon-btn danger" title="Eliminar" onclick="deletePeli('${p.id}')">🗑️</button>
           </div>
         </div>
@@ -322,9 +315,9 @@ function starsHtml(n) {
   return h;
 }
 
-function openPeliModal(editId = null) {
-  document.getElementById('peli-edit-id').value = editId || '';
-  document.getElementById('peli-modal-title').textContent = editId ? 'Editar Película' : 'Añadir Película';
+function openPeliModal() {
+  document.getElementById('peli-edit-id').value = '';
+  document.getElementById('peli-modal-title').textContent = 'Añadir Película';
   document.getElementById('peli-titulo').value = '';
   document.getElementById('peli-vista-toggle').checked = false;
   document.getElementById('peli-puntuacion').value = '0';
@@ -353,7 +346,7 @@ function togglePeliVistaModal() {
   document.getElementById('peli-vista-fields').classList.toggle('hidden', !checked);
 }
 
-async function togglePeliVista(id, value) {
+async function togglePeliVistaDB(id, value) {
   await db.collection('pelis').doc(id).update({ vista: value });
 }
 
@@ -427,19 +420,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Hard fallback — always hide loading after 3s no matter what
   setTimeout(hideLoading, 3000);
 
-  try { loadTheme(); } catch(e) { console.warn('Theme error:', e); }
-  try { initMap(); }   catch(e) { console.warn('Map error:', e); }
-
-  try { listenLugares(); } catch(e) { console.warn('Lugares error:', e); }
-  try { listenPelis(); }   catch(e) { console.warn('Pelis error:', e); }
-  try { listenViajes(); }  catch(e) { console.warn('Viajes error:', e); }
-
-  try { initStars(); } catch(e) { console.warn('Stars error:', e); }
+  try { loadTheme(); }      catch(e) { console.warn('Theme error:', e); }
+  try { initMap(); }        catch(e) { console.warn('Map error:', e); }
+  try { listenLugares(); }  catch(e) { console.warn('Lugares error:', e); }
+  try { listenPelis(); }    catch(e) { console.warn('Pelis error:', e); }
+  try { listenViajes(); }   catch(e) { console.warn('Viajes error:', e); }
+  try { initStars(); }      catch(e) { console.warn('Stars error:', e); }
 
   try {
     document.getElementById('peli-vista-toggle').addEventListener('change', togglePeliVistaModal);
   } catch(e) {}
 
-  // Normal hide after 1.4s
   setTimeout(hideLoading, 1400);
 });
