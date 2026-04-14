@@ -11,11 +11,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Caché offline
-db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-  console.warn('Persistencia no disponible:', err.code);
-});
-
 // Geocoding via Nominatim (OpenStreetMap)
 async function geocode(query) {
   try {
