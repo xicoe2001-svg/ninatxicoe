@@ -11,6 +11,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+db.settings({ experimentalForceLongPolling: true, merge: true });
 
 // Geocoding via Nominatim (OpenStreetMap) — no API key needed
 async function geocode(query) {
