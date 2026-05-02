@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0d0a0e">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Ninatxicoe ♥</title>
@@ -134,7 +135,6 @@
 
       <!-- VIAJES -->
       <section id="tab-viajes" class="tab-section">
-        <!-- Vista principal viajes -->
         <div id="viajes-main-view">
           <div class="section-header">
             <h2>Viajes</h2>
@@ -154,7 +154,6 @@
           </div>
         </div>
 
-        <!-- Vista diario de viaje -->
         <div id="viaje-diario-view" class="hidden">
           <div class="diario-header">
             <button class="back-link" onclick="closeDiario()">← Volver</button>
@@ -205,7 +204,7 @@
 
   <!-- ===== MODALS ===== -->
 
-  <!-- Modal: Lugar (ruta / restaurante / plan) -->
+  <!-- Modal: Lugar -->
   <div id="lugar-modal" class="modal-overlay hidden" onclick="handleModalOverlayClick(event,'lugar-modal')">
     <div class="modal-box">
       <div class="modal-header">
@@ -254,8 +253,14 @@
           <textarea id="resena-texto" placeholder="Notas, sensaciones, recuerdos..." rows="4"></textarea>
         </div>
         <div class="form-group">
-          <label>URL Foto (Google Fotos u otra)</label>
-          <input type="url" id="resena-foto-url" placeholder="https://photos.google.com/...">
+          <label>Foto</label>
+          <label class="foto-upload-btn">
+            📷 Subir foto
+            <input type="file" id="resena-foto-input" accept="image/*" style="display:none">
+          </label>
+          <div id="resena-foto-preview" style="display:none; margin-top:10px;">
+            <img id="resena-foto-preview-img" src="" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px;">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -281,7 +286,7 @@
         <div class="form-group toggle-group">
           <label class="toggle-label">
             <div class="toggle-switch">
-              <input type="checkbox" id="peli-vista-toggle" onchange="togglePeliVista()">
+              <input type="checkbox" id="peli-vista-toggle">
               <span class="toggle-track"></span>
             </div>
             Ya la hemos visto
@@ -360,8 +365,14 @@
           <textarea id="dia-notas" placeholder="Cómo fue el día, qué vivisteis, qué sentisteis..." rows="5"></textarea>
         </div>
         <div class="form-group">
-          <label>URLs de fotos (una por línea)</label>
-          <textarea id="dia-fotos" placeholder="https://photos.google.com/...&#10;https://..." rows="3"></textarea>
+          <label>Foto del día</label>
+          <label class="foto-upload-btn">
+            📷 Subir foto
+            <input type="file" id="dia-foto-input" accept="image/*" style="display:none">
+          </label>
+          <div id="dia-foto-preview" style="display:none; margin-top:10px;">
+            <img id="dia-foto-preview-img" src="" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px;">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
