@@ -1,3 +1,22 @@
+// ===== CLOUDINARY =====
+const CLOUDINARY_CLOUD = 'denmnzuyh';
+const CLOUDINARY_PRESET = 'ninatxicoe';
+
+async function uploadFoto(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  formData.append('folder', 'ninatxicoe');
+
+  const resp = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: 'POST',
+    body: formData
+  });
+  const data = await resp.json();
+  if (data.secure_url) return data.secure_url;
+  throw new Error('Upload failed');
+}
+
 // ===== HELPERS =====
 function escHtml(str) {
   if (!str) return '';
@@ -82,7 +101,7 @@ function closeThemePanel() {
   document.getElementById('panel-overlay').classList.add('hidden');
 }
 
-// ===== LUGARES (rutas, restaurantes, planes) =====
+// ===== LUGARES =====
 let lugaresData = {};
 
 const TIPO_CONFIG = {
@@ -124,7 +143,7 @@ function renderLugarList(tipo, items) {
       ? `<a class="maps-link" href="${escHtml(l.maps_url)}" target="_blank">📍 Abrir en Maps</a>`
       : '';
     const resenaBtn = l.completado
-      ? `<button class="icon-btn ${l.resena ? 'active' : ''}" title="Reseña" onclick="openResenaModal('${l.id}')">📝</button>`
+      ? `<button class="icon-btn ${l.resena || l.foto_url ? 'active' : ''}" title="Reseña" onclick="openResenaModal('${l.id}')">📝</button>`
       : '';
     const resenaPreview = l.resena
       ? `<div class="item-resena-preview">"${escHtml(l.resena.substring(0,120))}${l.resena.length > 120 ? '…' : ''}"</div>`
@@ -189,13 +208,10 @@ async function saveLugar() {
   const editId = document.getElementById('lugar-edit-id').value;
 
   const data = {
-    nombre,
-    tipo,
-    ubicacion,
+    nombre, tipo, ubicacion,
     maps_url: document.getElementById('lugar-maps-url').value.trim(),
     notas:    document.getElementById('lugar-notas').value.trim(),
-    lat: null,
-    lng: null,
+    lat: null, lng: null,
   };
 
   let docRef;
@@ -211,8 +227,6 @@ async function saveLugar() {
   }
 
   closeModal('lugar-modal');
-
-  // Geocoding en segundo plano — no bloquea
   geocode(ubicacion).then(coords => {
     if (coords) docRef.update({ lat: coords.lat, lng: coords.lng });
   });
@@ -227,22 +241,40 @@ async function deleteLugar(id) {
   await db.collection('lugares').doc(id).delete();
 }
 
+// Reseña con foto real
 function openResenaModal(id) {
   const l = lugaresData[id];
   if (!l) return;
   document.getElementById('resena-lugar-id').value = id;
   document.getElementById('resena-texto').value = l.resena || '';
-  document.getElementById('resena-foto-url').value = l.foto_url || '';
+  document.getElementById('resena-foto-preview-img').src = l.foto_url || '';
+  document.getElementById('resena-foto-preview').style.display = l.foto_url ? 'block' : 'none';
+  document.getElementById('resena-foto-input').value = '';
   openModal('resena-modal');
 }
 
 async function saveResena() {
-  const id    = document.getElementById('resena-lugar-id').value;
-  const texto = document.getElementById('resena-texto').value.trim();
-  const foto  = document.getElementById('resena-foto-url').value.trim();
-  const btn   = document.querySelector('#resena-modal .btn-primary');
+  const id      = document.getElementById('resena-lugar-id').value;
+  const texto   = document.getElementById('resena-texto').value.trim();
+  const fileInput = document.getElementById('resena-foto-input');
+  const btn     = document.querySelector('#resena-modal .btn-primary');
+
   btn.disabled = true; btn.textContent = 'Guardando…';
-  await db.collection('lugares').doc(id).update({ resena: texto, foto_url: foto });
+
+  let foto_url = lugaresData[id]?.foto_url || '';
+
+  if (fileInput.files && fileInput.files[0]) {
+    try {
+      btn.textContent = 'Subiendo foto…';
+      foto_url = await uploadFoto(fileInput.files[0]);
+    } catch(e) {
+      alert('Error subiendo la foto, inténtalo de nuevo');
+      btn.disabled = false; btn.textContent = 'Guardar';
+      return;
+    }
+  }
+
+  await db.collection('lugares').doc(id).update({ resena: texto, foto_url });
   closeModal('resena-modal');
   btn.disabled = false; btn.textContent = 'Guardar';
 }
@@ -261,23 +293,19 @@ function listenPelis() {
 function renderPelis() {
   const vistas     = Object.values(pelisData).filter(p => p.vista);
   const pendientes = Object.values(pelisData).filter(p => !p.vista);
-
   renderPelisList('pelis-pendientes-list', pendientes, false);
-  renderPelisList('pelis-vistas-list',     vistas,     true);
-
+  renderPelisList('pelis-vistas-list', vistas, true);
   document.getElementById('pelis-pendientes').style.display = pendientes.length ? '' : 'none';
-  document.getElementById('pelis-vistas').style.display     = vistas.length     ? '' : 'none';
+  document.getElementById('pelis-vistas').style.display = vistas.length ? '' : 'none';
 }
 
 function renderPelisList(containerId, pelis, vistas) {
   const el = document.getElementById(containerId);
   if (!el) return;
-
   if (!pelis.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎬</div><p>${vistas ? 'Nada visto aún' : 'Lista vacía'}</p></div>`;
     return;
   }
-
   el.innerHTML = pelis.map(p => {
     const stars = p.puntuacion
       ? `<div class="peli-card-puntuacion"><div class="stars-display">${starsHtml(p.puntuacion)}</div></div>`
@@ -285,9 +313,6 @@ function renderPelisList(containerId, pelis, vistas) {
     const resena = p.resena
       ? `<div class="item-resena-preview">"${escHtml(p.resena.substring(0,120))}${p.resena.length > 120 ? '…' : ''}"</div>`
       : '';
-    const toggleLabel = p.vista ? '↩️' : '✓';
-    const toggleTitle = p.vista ? 'Marcar por ver' : 'Marcar como vista';
-
     return `
       <div class="item-card ${p.vista ? 'completado' : ''}">
         <div class="item-card-top">
@@ -296,7 +321,7 @@ function renderPelisList(containerId, pelis, vistas) {
             ${stars}
           </div>
           <div class="item-actions">
-            <button class="btn-check ${p.vista ? 'checked' : ''}" title="${toggleTitle}" onclick="togglePeliVistaDB('${p.id}',${!p.vista})">${toggleLabel}</button>
+            <button class="btn-check ${p.vista ? 'checked' : ''}" title="${p.vista ? 'Marcar por ver' : 'Marcar como vista'}" onclick="togglePeliVistaDB('${p.id}',${!p.vista})">${p.vista ? '↩️' : '✓'}</button>
             <button class="icon-btn ${p.resena ? 'active' : ''}" title="Editar" onclick="editPeli('${p.id}')">✏️</button>
             <button class="icon-btn danger" title="Eliminar" onclick="deletePeli('${p.id}')">🗑️</button>
           </div>
@@ -309,9 +334,7 @@ function renderPelisList(containerId, pelis, vistas) {
 
 function starsHtml(n) {
   let h = '';
-  for (let i = 1; i <= 5; i++) {
-    h += `<span class="${i <= n ? 'star-filled' : 'star-empty'}">★</span>`;
-  }
+  for (let i = 1; i <= 5; i++) h += `<span class="${i <= n ? 'star-filled' : 'star-empty'}">★</span>`;
   return h;
 }
 
@@ -353,15 +376,12 @@ async function togglePeliVistaDB(id, value) {
 async function savePeli() {
   const titulo = document.getElementById('peli-titulo').value.trim();
   if (!titulo) { alert('El título es obligatorio'); return; }
-
   const editId = document.getElementById('peli-edit-id').value;
   const vista  = document.getElementById('peli-vista-toggle').checked;
   const punt   = parseInt(document.getElementById('peli-puntuacion').value) || 0;
   const resena = document.getElementById('peli-resena').value.trim();
-
-  const btn = document.querySelector('#peli-modal .btn-primary');
+  const btn    = document.querySelector('#peli-modal .btn-primary');
   btn.disabled = true; btn.textContent = 'Guardando…';
-
   const data = { titulo, vista, puntuacion: punt, resena };
   if (editId) {
     await db.collection('pelis').doc(editId).update(data);
@@ -369,7 +389,6 @@ async function savePeli() {
     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
     await db.collection('pelis').add(data);
   }
-
   closeModal('peli-modal');
   btn.disabled = false; btn.textContent = 'Guardar';
 }
@@ -379,7 +398,6 @@ async function deletePeli(id) {
   await db.collection('pelis').doc(id).delete();
 }
 
-// Stars interaction
 function initStars() {
   const stars = document.querySelectorAll('#stars-input .star');
   stars.forEach(star => {
@@ -398,13 +416,11 @@ function setStars(n) {
     s.classList.toggle('active', parseInt(s.dataset.val) <= n);
   });
 }
-
 function hoverStars(n) {
   document.querySelectorAll('#stars-input .star').forEach(s => {
     s.classList.toggle('active', parseInt(s.dataset.val) <= n);
   });
 }
-
 function resetStars() { setStars(0); }
 
 // ===== HIDE LOADING =====
@@ -417,18 +433,27 @@ function hideLoading() {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Hard fallback — always hide loading after 3s no matter what
   setTimeout(hideLoading, 3000);
+  try { loadTheme(); }      catch(e) { console.warn(e); }
+  try { initMap(); }        catch(e) { console.warn(e); }
+  try { listenLugares(); }  catch(e) { console.warn(e); }
+  try { listenPelis(); }    catch(e) { console.warn(e); }
+  try { listenViajes(); }   catch(e) { console.warn(e); }
+  try { initStars(); }      catch(e) { console.warn(e); }
+  try { document.getElementById('peli-vista-toggle').addEventListener('change', togglePeliVistaModal); } catch(e) {}
 
-  try { loadTheme(); }      catch(e) { console.warn('Theme error:', e); }
-  try { initMap(); }        catch(e) { console.warn('Map error:', e); }
-  try { listenLugares(); }  catch(e) { console.warn('Lugares error:', e); }
-  try { listenPelis(); }    catch(e) { console.warn('Pelis error:', e); }
-  try { listenViajes(); }   catch(e) { console.warn('Viajes error:', e); }
-  try { initStars(); }      catch(e) { console.warn('Stars error:', e); }
-
+  // Preview foto en reseña
   try {
-    document.getElementById('peli-vista-toggle').addEventListener('change', togglePeliVistaModal);
+    document.getElementById('resena-foto-input').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('resena-foto-preview-img').src = e.target.result;
+        document.getElementById('resena-foto-preview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
   } catch(e) {}
 
   setTimeout(hideLoading, 1400);
