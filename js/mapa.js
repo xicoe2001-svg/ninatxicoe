@@ -10,26 +10,37 @@ const TIPO_ICON = {
   viaje:       '✈️'
 };
 
+function getMapHeight() {
+  // iOS Safari safe height calculation
+  const total = window.innerHeight;
+  const headerH = 56;
+  const navH = 64;
+  return Math.max(total - headerH - navH, 200);
+}
+
 function initMap() {
   if (mapInitialized) return;
 
   const mapEl = document.getElementById('map');
   if (!mapEl) return;
 
-  // Force size on iOS
-  mapEl.style.height = (window.innerHeight - 56 - 64) + 'px';
+  // Set explicit height — critical for iOS
+  mapEl.style.height = getMapHeight() + 'px';
+  mapEl.style.width = '100%';
 
   map = L.map('map', {
     center: [40.4168, -3.7038],
     zoom: 5,
     zoomControl: false,
     tap: true,
-    tapTolerance: 15
+    tapTolerance: 15,
+    bounceAtZoomLimits: false
   });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
-    maxZoom: 18
+    maxZoom: 18,
+    detectRetina: true
   }).addTo(map);
 
   L.control.zoom({ position: 'topright' }).addTo(map);
@@ -37,8 +48,10 @@ function initMap() {
   mapInitialized = true;
   listenMapPins();
 
-  // Fix iOS rendering
-  setTimeout(() => map.invalidateSize(), 300);
+  // Multiple invalidations for iOS
+  setTimeout(() => map.invalidateSize(), 100);
+  setTimeout(() => map.invalidateSize(), 500);
+  setTimeout(() => map.invalidateSize(), 1000);
 }
 
 function createPinIcon(tipo, completado) {
@@ -122,15 +135,19 @@ function flyToPin(lat, lng) {
 }
 
 function invalidateMapSize() {
-  if (!map) { initMap(); return; }
   const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.style.height = (window.innerHeight - 56 - 64) + 'px';
+  if (mapEl) mapEl.style.height = getMapHeight() + 'px';
+  if (!map) {
+    initMap();
+    return;
+  }
   setTimeout(() => map.invalidateSize(), 100);
+  setTimeout(() => map.invalidateSize(), 400);
 }
 
 window.addEventListener('resize', () => {
   if (!map) return;
   const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.style.height = (window.innerHeight - 56 - 64) + 'px';
-  map.invalidateSize();
+  if (mapEl) mapEl.style.height = getMapHeight() + 'px';
+  setTimeout(() => map.invalidateSize(), 100);
 });
