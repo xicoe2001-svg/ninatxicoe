@@ -434,8 +434,13 @@ function hideLoading() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(hideLoading, 3000);
-  try { loadTheme(); }      catch(e) { console.warn(e); }
-  try { initMap(); }        catch(e) { console.warn(e); }
+  try { loadTheme(); } catch(e) { console.warn(e); }
+
+  // Delay map init — iOS needs layout to be painted first
+  setTimeout(() => {
+    try { initMap(); } catch(e) { console.warn(e); }
+  }, 200);
+
   try { listenLugares(); }  catch(e) { console.warn(e); }
   try { listenPelis(); }    catch(e) { console.warn(e); }
   try { listenViajes(); }   catch(e) { console.warn(e); }
@@ -451,6 +456,20 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.onload = e => {
         document.getElementById('resena-foto-preview-img').src = e.target.result;
         document.getElementById('resena-foto-preview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+  } catch(e) {}
+
+  // Preview foto en diario
+  try {
+    document.getElementById('dia-foto-input').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('dia-foto-preview-img').src = e.target.result;
+        document.getElementById('dia-foto-preview').style.display = 'block';
       };
       reader.readAsDataURL(file);
     });
