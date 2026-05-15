@@ -10,23 +10,14 @@ const TIPO_ICON = {
   viaje:       '✈️'
 };
 
-function getMapHeight() {
-  // iOS Safari safe height calculation
-  const total = window.innerHeight;
-  const headerH = 56;
-  const navH = 64;
-  return Math.max(total - headerH - navH, 200);
-}
-
 function initMap() {
   if (mapInitialized) return;
 
   const mapEl = document.getElementById('map');
   if (!mapEl) return;
 
-  // Set explicit height — critical for iOS
-  mapEl.style.height = getMapHeight() + 'px';
-  mapEl.style.width = '100%';
+  // Height handled by CSS calc(), just ensure block display
+  mapEl.style.display = 'block';
 
   map = L.map('map', {
     center: [40.4168, -3.7038],
@@ -48,10 +39,9 @@ function initMap() {
   mapInitialized = true;
   listenMapPins();
 
-  // Multiple invalidations for iOS
   setTimeout(() => map.invalidateSize(), 100);
   setTimeout(() => map.invalidateSize(), 500);
-  setTimeout(() => map.invalidateSize(), 1000);
+  setTimeout(() => map.invalidateSize(), 1200);
 }
 
 function createPinIcon(tipo, completado) {
@@ -114,8 +104,8 @@ function listenMapPins() {
         popupContent += `<div class="popup-sub">Viaje completado</div>`;
         popupContent += `<a class="popup-link" href="#" onclick="event.preventDefault();abrirDiarioDesdeMapaId('${change.doc.id}')">📖 Ver diario</a>`;
       } else {
-        const estadoLabel = d.estado === 'en_curso' ? '✈️ En curso' : '🗓️ Planeado';
-        popupContent += `<div class="popup-sub">${estadoLabel}</div>`;
+        const label = d.estado === 'en_curso' ? '✈️ En curso' : '🗓️ Planeado';
+        popupContent += `<div class="popup-sub">${label}</div>`;
       }
       marker.bindPopup(popupContent, { maxWidth: 240 });
       marker.addTo(map);
@@ -135,19 +125,12 @@ function flyToPin(lat, lng) {
 }
 
 function invalidateMapSize() {
-  const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.style.height = getMapHeight() + 'px';
-  if (!map) {
-    initMap();
-    return;
-  }
+  if (!map) { initMap(); return; }
   setTimeout(() => map.invalidateSize(), 100);
   setTimeout(() => map.invalidateSize(), 400);
 }
 
 window.addEventListener('resize', () => {
   if (!map) return;
-  const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.style.height = getMapHeight() + 'px';
   setTimeout(() => map.invalidateSize(), 100);
 });
