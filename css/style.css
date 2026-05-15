@@ -93,8 +93,13 @@
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+html {
   height: 100%;
+  height: -webkit-fill-available;
+}
+body {
+  height: 100%;
+  height: -webkit-fill-available;
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
@@ -320,7 +325,11 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   height: -webkit-fill-available;
+  overflow: hidden;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
 }
 
 /* ===== HEADER ===== */
@@ -358,18 +367,21 @@ html, body {
 .tab-section {
   display: none;
   height: 100%;
-  overflow-y: auto;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 16px;
+  overscroll-behavior: contain;
+  padding-bottom: 20px;
 }
 .tab-section.active { display: flex; flex-direction: column; }
 
 /* Map tab special */
-#tab-mapa.active { padding-bottom: 0; }
+#tab-mapa.active { padding-bottom: 0; overflow: hidden; }
 #map {
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
+  width: 100%;
   z-index: 1;
+  position: relative;
 }
 
 /* Leaflet overrides */
@@ -992,23 +1004,4 @@ html, body {
 /* Safe area */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   #bottom-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); height: auto; min-height: var(--nav-h); }
-}
-.foto-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--bg3);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: 100%;
-  justify-content: center;
-}
-.foto-upload-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
