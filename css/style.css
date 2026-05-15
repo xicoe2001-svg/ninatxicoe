@@ -375,13 +375,14 @@ body {
 .tab-section.active { display: flex; flex-direction: column; }
 
 /* Map tab special */
-#tab-mapa.active { padding-bottom: 0; overflow: hidden; }
+#tab-mapa.active { padding-bottom: 0; overflow: hidden; display: block !important; }
 #map {
-  flex: 1;
-  min-height: 200px;
   width: 100%;
+  height: calc(100vh - 56px - 64px);
+  height: calc(100dvh - 56px - 64px);
   z-index: 1;
   position: relative;
+  display: block;
 }
 
 /* Leaflet overrides */
