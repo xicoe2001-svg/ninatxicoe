@@ -85,7 +85,7 @@ function initStarsBg() {
   const container = document.getElementById('stars-bg');
   if (!container) return;
   const symbols = ['✦', '✧', '⋆', '·', '✦', '★', '✩'];
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 45; i++) {
     const star = document.createElement('div');
     star.className = 'star-particle';
     star.textContent = symbols[Math.floor(Math.random() * symbols.length)];
@@ -259,6 +259,14 @@ async function saveLugar() {
 
 async function toggleCompletado(id, value) {
   await db.collection('lugares').doc(id).update({ completado: value });
+  if (value) {
+    const lugar = lugaresData[id];
+    if (lugar) {
+      const tipo = lugar.tipo;
+      const celebType = tipo === 'restaurante' ? 'restaurante' : tipo === 'ruta' ? 'ruta' : 'plan';
+      showCelebration(celebType, lugar.nombre);
+    }
+  }
 }
 
 async function deleteLugar(id) {
@@ -396,6 +404,10 @@ function togglePeliVistaModal() {
 
 async function togglePeliVistaDB(id, value) {
   await db.collection('pelis').doc(id).update({ vista: value });
+  if (value) {
+    const peli = pelisData[id];
+    showCelebration('peli', peli ? peli.titulo : '');
+  }
 }
 
 async function savePeli() {
