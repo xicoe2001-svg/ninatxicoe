@@ -1278,3 +1278,82 @@ body {
   color: var(--star-color);
   animation: fadeUp 0.6s ease 1.3s both, twinkle 1.5s ease 1.3s infinite;
 }
+
+/* ===== CELEBRATION CARD ANIMATIONS ===== */
+
+/* Diana */
+.anim-diana {
+  position: relative;
+  width: 100px; height: 100px;
+  margin: 0 auto 8px;
+}
+.diana-ring {
+  position: absolute;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+.r1 { width:100px; height:100px; background:#e8927a; animation: ringPop 0.3s ease 0.3s both; }
+.r2 { width:76px;  height:76px;  background:white;   animation: ringPop 0.3s ease 0.4s both; }
+.r3 { width:54px;  height:54px;  background:#e8927a; animation: ringPop 0.3s ease 0.5s both; }
+.r4 { width:32px;  height:32px;  background:white;   animation: ringPop 0.3s ease 0.6s both; }
+.diana-center { position:absolute; width:14px; height:14px; background:#c0392b; border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); animation: ringPop 0.3s ease 0.7s both; }
+.diana-dart { position:absolute; font-size:28px; top:50%; left:-30px; transform:translateY(-50%); animation: dartFly 0.6s cubic-bezier(0.34,1.2,0.64,1) 0.5s both; }
+@keyframes ringPop { from { transform:translate(-50%,-50%) scale(0); opacity:0; } to { transform:translate(-50%,-50%) scale(1); opacity:1; } }
+@keyframes dartFly { from { left:-50px; opacity:0; } to { left:32px; opacity:1; } }
+
+/* Clink */
+.anim-clink {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 70px;
+  margin-bottom: 8px;
+}
+.copa { font-size: 38px; display: inline-block; }
+.copa-left  { animation: copaLeft  0.5s cubic-bezier(0.34,1.5,0.64,1) 0.5s both; }
+.copa-right { animation: copaRight 0.5s cubic-bezier(0.34,1.5,0.64,1) 0.5s both; transform: scaleX(-1); }
+.clink-spark { font-size: 28px; position: absolute; top: 0; left: 50%; transform: translateX(-50%); animation: sparkPop 0.4s ease 0.9s both; }
+@keyframes copaLeft  { from { transform:translateX(-40px) rotate(-20deg); opacity:0; } to { transform:translateX(0) rotate(15deg); opacity:1; } }
+@keyframes copaRight { from { transform:scaleX(-1) translateX(-40px) rotate(-20deg); opacity:0; } to { transform:scaleX(-1) translateX(0) rotate(15deg); opacity:1; } }
+@keyframes sparkPop  { from { transform:translateX(-50%) scale(0); opacity:0; } 60% { transform:translateX(-50%) scale(1.4); opacity:1; } to { transform:translateX(-50%) scale(1); opacity:1; } }
+
+/* Summit */
+.anim-summit { text-align: center; margin-bottom: 8px; }
+.summit-mountain { font-size: 52px; display: block; animation: mountainPop 0.5s cubic-bezier(0.34,1.3,0.64,1) 0.2s both; }
+.summit-figures { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: -10px; }
+.figure-boy  { font-size: 28px; animation: figureUp 0.6s cubic-bezier(0.34,1.4,0.64,1) 0.6s both; }
+.figure-girl { font-size: 28px; animation: figureUp 0.6s cubic-bezier(0.34,1.4,0.64,1) 0.8s both; }
+.summit-flag { font-size: 22px; animation: flagWave 0.4s ease 1.1s both; }
+@keyframes mountainPop { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+@keyframes figureUp    { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes flagWave    { from { transform:scale(0) rotate(-30deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
+
+/* Cinema */
+.anim-cinema { text-align: center; margin-bottom: 8px; }
+.cinema-screen { font-size: 48px; display: block; animation: screenOn 0.5s ease 0.3s both; }
+.cinema-audience { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+.aud-person { font-size: 22px; animation: clapHands 0.4s ease infinite alternate; }
+.aud-person:nth-child(1) { animation-delay: 0s; }
+.aud-person:nth-child(2) { animation-delay: 0.1s; }
+.aud-person:nth-child(3) { animation-delay: 0.05s; }
+.aud-person:nth-child(4) { animation-delay: 0.15s; }
+.aud-person:nth-child(5) { animation-delay: 0.08s; }
+@keyframes screenOn  { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+@keyframes clapHands { from { transform:translateY(0) scale(1); } to { transform:translateY(-8px) scale(1.1); } }
+
+/* Celeb big emoji */
+.celeb-big-emoji {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 8px;
+  animation: emojiBounce 0.6s cubic-bezier(0.34,1.6,0.64,1) both;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+}
+@keyframes emojiBounce {
+  from { transform:scale(0) rotate(-15deg); opacity:0; }
+  70%  { transform:scale(1.2) rotate(5deg); opacity:1; }
+  to   { transform:scale(1) rotate(0deg); opacity:1; }
+}
