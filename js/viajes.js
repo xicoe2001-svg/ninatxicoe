@@ -7,22 +7,21 @@ function listenViajes() {
     viajesData = {};
     snapshot.forEach(doc => { viajesData[doc.id] = { id: doc.id, ...doc.data() }; });
     renderViajes();
-  });
+  }, err => console.warn('Viajes error:', err));
 }
 
 function renderViajes() {
-  const enCurso     = Object.values(viajesData).filter(v => v.estado === 'en_curso');
-  const pendientes  = Object.values(viajesData).filter(v => v.estado === 'pendiente');
-  const completados = Object.values(viajesData).filter(v => v.estado === 'completado');
+  const enCurso    = Object.values(viajesData).filter(v => v.estado === 'en_curso');
+  const pendientes = Object.values(viajesData).filter(v => v.estado === 'pendiente');
+  const completados= Object.values(viajesData).filter(v => v.estado === 'completado');
 
-  renderViajesList('viajes-curso-list',      enCurso,     'en_curso');
-  renderViajesList('viajes-pendientes-list', pendientes,  'pendiente');
-  renderViajesList('viajes-completados-list',completados, 'completado');
+  renderViajesList('viajes-curso-list',       enCurso,      'en_curso');
+  renderViajesList('viajes-pendientes-list',  pendientes,   'pendiente');
+  renderViajesList('viajes-completados-list', completados,  'completado');
 
-  // Mostrar/ocultar secciones vacías
-  document.getElementById('viajes-en-curso').style.display = enCurso.length ? '' : 'none';
-  document.getElementById('viajes-pendientes-wrap').style.display = pendientes.length ? '' : 'none';
-  document.getElementById('viajes-completados-wrap').style.display = completados.length ? '' : 'none';
+  document.getElementById('viajes-en-curso').style.display           = enCurso.length    ? '' : 'none';
+  document.getElementById('viajes-pendientes-wrap').style.display    = pendientes.length ? '' : 'none';
+  document.getElementById('viajes-completados-wrap').style.display   = completados.length? '' : 'none';
 }
 
 function renderViajesList(containerId, viajes, tipo) {
@@ -35,7 +34,6 @@ function renderViajesList(containerId, viajes, tipo) {
     const btnEmpezar = v.estado === 'pendiente'
       ? `<button class="btn-empezar" onclick="event.stopPropagation();empezarViaje('${v.id}','${escHtml(v.destino)}')">¡Empezar viaje! ✈️</button>`
       : '';
-
     return `
       <div class="item-card viaje-card" onclick="openDiario('${v.id}')">
         <div class="item-card-top">
@@ -71,31 +69,29 @@ async function saveViaje() {
   if (!destino) { alert('El destino es obligatorio'); return; }
 
   const btn = document.querySelector('#viaje-modal .btn-primary');
-  btn.disabled = true;
-  btn.textContent = 'Guardando…';
-
-  // Geocode destination
-  const coords = await geocode(destino);
+  btn.disabled = true; btn.textContent = 'Guardando…';
 
   const data = {
     destino,
     fecha:    document.getElementById('viaje-fecha').value || '',
     notas:    document.getElementById('viaje-notas').value.trim(),
     estado:   'pendiente',
-    lat:      coords ? coords.lat : null,
-    lng:      coords ? coords.lng : null,
+    lat:      null,
+    lng:      null,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  await db.collection('viajes').add(data);
+  const docRef = await db.collection('viajes').add(data);
   closeModal('viaje-modal');
-  btn.disabled = false;
-  btn.textContent = 'Guardar';
+  btn.disabled = false; btn.textContent = 'Guardar';
+
+  geocode(destino).then(coords => {
+    if (coords) docRef.update({ lat: coords.lat, lng: coords.lng });
+  });
 }
 
 async function deleteViaje(id) {
   if (!confirm('¿Eliminar este viaje y todo su diario?')) return;
-  // Delete subcollection dias (batch)
   const dias = await db.collection('viajes').doc(id).collection('dias').get();
   const batch = db.batch();
   dias.forEach(d => batch.delete(d.ref));
@@ -104,9 +100,7 @@ async function deleteViaje(id) {
 }
 
 async function empezarViaje(id, destino) {
-  // Show epic animation
   showViajeStartAnimation(destino);
-  // Update state
   await db.collection('viajes').doc(id).update({
     estado: 'en_curso',
     fechaInicio: firebase.firestore.FieldValue.serverTimestamp()
@@ -114,19 +108,7 @@ async function empezarViaje(id, destino) {
 }
 
 function showViajeStartAnimation(destino) {
-  const overlay = document.getElementById('viaje-start-overlay');
-  document.getElementById('viaje-start-destino').textContent = destino + '!';
-  overlay.classList.remove('hidden');
-  // Auto-dismiss after 4s
-  setTimeout(() => {
-    overlay.style.opacity = '0';
-    overlay.style.transition = 'opacity 0.8s ease';
-    setTimeout(() => {
-      overlay.classList.add('hidden');
-      overlay.style.opacity = '';
-      overlay.style.transition = '';
-    }, 800);
-  }, 3500);
+  showEpicViajeAnimation(destino);
 }
 
 // ===== DIARIO =====
@@ -142,19 +124,12 @@ function openDiario(viajeId) {
   badge.textContent = estadoLabel(viaje.estado);
   badge.className = `viaje-badge ${viaje.estado}`;
 
-  // Actions
   const actions = document.getElementById('diario-actions');
-  if (viaje.estado === 'en_curso') {
-    actions.classList.remove('hidden');
-  } else {
-    actions.classList.add('hidden');
-  }
+  viaje.estado === 'en_curso' ? actions.classList.remove('hidden') : actions.classList.add('hidden');
 
-  // Show diario view
   document.getElementById('viajes-main-view').classList.add('hidden');
   document.getElementById('viaje-diario-view').classList.remove('hidden');
 
-  // Listen to dias
   if (diasListener) diasListener();
   diasListener = db.collection('viajes').doc(viajeId).collection('dias')
     .orderBy('num', 'asc')
@@ -177,26 +152,19 @@ function renderDias(dias) {
   if (!dias.length) {
     const viaje = viajesData[currentViajeId];
     const esEnCurso = viaje && viaje.estado === 'en_curso';
-    el.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📖</div>
-        <p>${esEnCurso ? 'El diario está esperando vuestras aventuras…' : 'Este diario está vacío.'}</p>
-      </div>
-    `;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📖</div><p>${esEnCurso ? 'El diario está esperando vuestras aventuras…' : 'Este diario está vacío.'}</p></div>`;
     return;
   }
 
   el.innerHTML = dias.map(dia => {
-    const fotos = (dia.fotos || []).filter(f => f.trim());
+    const fotos = (dia.fotos || []).filter(f => f && f.trim());
     const fotosHtml = fotos.length
       ? `<div class="dia-fotos-grid">${fotos.map(f => `<div class="dia-foto"><img src="${escHtml(f)}" loading="lazy" alt="foto"></div>`).join('')}</div>`
       : '';
 
     const viaje = viajesData[currentViajeId];
     const esEnCurso = viaje && viaje.estado === 'en_curso';
-    const editBtn = esEnCurso
-      ? `<button class="icon-btn" onclick="editDia('${dia.id}',${dia.num})">✏️</button>`
-      : '';
+    const editBtn = esEnCurso ? `<button class="icon-btn" onclick="editDia('${dia.id}',${dia.num})">✏️</button>` : '';
 
     return `
       <div class="dia-card">
@@ -221,20 +189,19 @@ function openDiaModal(editId = null, editNum = null) {
   if (!currentViajeId) return;
   document.getElementById('dia-viaje-id').value = currentViajeId;
   document.getElementById('dia-edit-id').value = editId || '';
+  document.getElementById('dia-foto-input').value = '';
+  document.getElementById('dia-foto-preview').style.display = 'none';
+  document.getElementById('dia-foto-preview-img').src = '';
 
   if (editId) {
-    // Will be populated by editDia
     document.getElementById('dia-modal-title').textContent = `Editar Día ${editNum}`;
   } else {
-    // Calculate next day number
-    const daysEl = document.getElementById('diario-days-list');
-    const count = daysEl.querySelectorAll('.dia-card').length;
+    const count = document.getElementById('diario-days-list').querySelectorAll('.dia-card').length;
     const nextNum = count + 1;
     document.getElementById('dia-num-input').value = nextNum;
     document.getElementById('dia-modal-title').textContent = `Día ${nextNum}`;
     document.getElementById('dia-titulo').value = '';
     document.getElementById('dia-notas').value = '';
-    document.getElementById('dia-fotos').value = '';
   }
   openModal('dia-modal');
 }
@@ -249,7 +216,8 @@ async function editDia(diaId, num) {
   document.getElementById('dia-modal-title').textContent = `Editar Día ${num}`;
   document.getElementById('dia-titulo').value = d.titulo || '';
   document.getElementById('dia-notas').value = d.notas || '';
-  document.getElementById('dia-fotos').value = (d.fotos || []).join('\n');
+  document.getElementById('dia-foto-input').value = '';
+  document.getElementById('dia-foto-preview').style.display = 'none';
   openModal('dia-modal');
 }
 
@@ -259,11 +227,28 @@ async function saveDia() {
   const num     = parseInt(document.getElementById('dia-num-input').value) || 1;
   const titulo  = document.getElementById('dia-titulo').value.trim();
   const notas   = document.getElementById('dia-notas').value.trim();
-  const fotosRaw= document.getElementById('dia-fotos').value;
-  const fotos   = fotosRaw.split('\n').map(f => f.trim()).filter(Boolean);
+  const fileInput = document.getElementById('dia-foto-input');
 
   const btn = document.querySelector('#dia-modal .btn-primary');
   btn.disabled = true; btn.textContent = 'Guardando…';
+
+  let fotos = [];
+  if (editId) {
+    const existing = await db.collection('viajes').doc(viajeId).collection('dias').doc(editId).get();
+    fotos = existing.data()?.fotos || [];
+  }
+
+  if (fileInput.files && fileInput.files[0]) {
+    try {
+      btn.textContent = 'Subiendo foto…';
+      const url = await uploadFoto(fileInput.files[0]);
+      fotos.push(url);
+    } catch(e) {
+      alert('Error subiendo la foto');
+      btn.disabled = false; btn.textContent = 'Guardar';
+      return;
+    }
+  }
 
   const data = { num, titulo, notas, fotos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
 
@@ -285,7 +270,6 @@ async function finalizarViaje() {
     estado: 'completado',
     fechaFin: firebase.firestore.FieldValue.serverTimestamp()
   });
-  // Refresh badge
   viajesData[currentViajeId].estado = 'completado';
   const badge = document.getElementById('diario-estado-badge');
   badge.textContent = estadoLabel('completado');
