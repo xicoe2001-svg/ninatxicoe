@@ -1,278 +1,212 @@
-// ===== VIAJES =====
-let currentViajeId = null;
-let viajesData = {};
+// ===== CELEBRATIONS & EFFECTS =====
 
-function listenViajes() {
-  db.collection('viajes').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-    viajesData = {};
-    snapshot.forEach(doc => { viajesData[doc.id] = { id: doc.id, ...doc.data() }; });
-    renderViajes();
-  }, err => console.warn('Viajes error:', err));
+// ---- Shooting Stars ----
+function launchShootingStar() {
+  const star = document.createElement('div');
+  const startY = 5 + Math.random() * 50;
+  star.style.cssText = `
+    position: fixed;
+    top: ${startY}vh;
+    left: -250px;
+    width: ${160 + Math.random() * 100}px;
+    height: 2.5px;
+    background: linear-gradient(to right, transparent, #f0c040 50%, white 75%, transparent);
+    border-radius: 50%;
+    transform: rotate(${18 + Math.random() * 18}deg);
+    animation: shootingStarAnim ${0.9 + Math.random() * 0.5}s ease-out forwards;
+    pointer-events: none;
+    z-index: 9999;
+  `;
+  document.body.appendChild(star);
+  setTimeout(() => { if (star.parentNode) star.remove(); }, 1600);
 }
 
-function renderViajes() {
-  const enCurso    = Object.values(viajesData).filter(v => v.estado === 'en_curso');
-  const pendientes = Object.values(viajesData).filter(v => v.estado === 'pendiente');
-  const completados= Object.values(viajesData).filter(v => v.estado === 'completado');
+// Shoot every 7-12s
+function scheduleShootingStar() {
+  launchShootingStar();
+  setTimeout(scheduleShootingStar, 7000 + Math.random() * 5000);
+}
+setTimeout(scheduleShootingStar, 4000);
+setTimeout(launchShootingStar, 1500);
 
-  renderViajesList('viajes-curso-list',       enCurso,      'en_curso');
-  renderViajesList('viajes-pendientes-list',  pendientes,   'pendiente');
-  renderViajesList('viajes-completados-list', completados,  'completado');
-
-  document.getElementById('viajes-en-curso').style.display           = enCurso.length    ? '' : 'none';
-  document.getElementById('viajes-pendientes-wrap').style.display    = pendientes.length ? '' : 'none';
-  document.getElementById('viajes-completados-wrap').style.display   = completados.length? '' : 'none';
+// ---- Confetti Rain ----
+function launchConfetti(container, count, symbols) {
+  symbols = symbols || ['✦','✧','⋆','★','·','✩','♥'];
+  const colors = ['var(--accent)','var(--accent2)','var(--accent3)','var(--star-color)','#f0c040'];
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      el.style.cssText = `
+        position: absolute;
+        left: ${Math.random() * 100}%;
+        top: -30px;
+        font-size: ${9 + Math.random() * 13}px;
+        color: ${colors[Math.floor(Math.random() * colors.length)]};
+        animation: confettiFall ${1.4 + Math.random() * 1.8}s linear forwards;
+        pointer-events: none;
+        z-index: 10;
+      `;
+      if (container && container.parentNode) container.appendChild(el);
+      setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+    }, i * 55);
+  }
 }
 
-function renderViajesList(containerId, viajes, tipo) {
-  const el = document.getElementById(containerId);
-  if (!viajes.length) { el.innerHTML = ''; return; }
+// ---- Celebration Card ----
+function showCelebration(type, subtitle) {
+  try {
+    const existing = document.getElementById('celebration-overlay');
+    if (existing) existing.remove();
 
-  el.innerHTML = viajes.map(v => {
-    const fecha = v.fecha ? `<span class="item-sub">${v.fecha}</span>` : '';
-    const badge = `<span class="viaje-badge ${v.estado}">${estadoLabel(v.estado)}</span>`;
-    const btnEmpezar = v.estado === 'pendiente'
-      ? `<button class="btn-empezar" onclick="event.stopPropagation();empezarViaje('${v.id}','${escHtml(v.destino)}')">¡Empezar viaje! ✈️</button>`
-      : '';
-    return `
-      <div class="item-card viaje-card" onclick="openDiario('${v.id}')">
-        <div class="item-card-top">
-          <div class="item-card-info">
-            <div class="item-nombre">${escHtml(v.destino)}</div>
-            ${fecha}
-            ${badge}
-          </div>
-          <div class="item-actions">
-            <button class="icon-btn danger" title="Eliminar" onclick="event.stopPropagation();deleteViaje('${v.id}')">🗑️</button>
-          </div>
-        </div>
-        ${btnEmpezar}
+    const configs = {
+      plan: {
+        emoji: '🎯',
+        anim: 'dart',
+        title: '¡Plan conseguido!',
+        text: 'Un plan menos, mil recuerdos más'
+      },
+      restaurante: {
+        emoji: '🍷',
+        anim: 'clink',
+        title: '¡Salud!',
+        text: 'Una velada para recordar'
+      },
+      ruta: {
+        emoji: '🏔️',
+        anim: 'summit',
+        title: '¡A la cima!',
+        text: 'Juntos llegaréis a donde sea'
+      },
+      peli: {
+        emoji: '🎬',
+        anim: 'cinema',
+        title: '¡Peliculón!',
+        text: 'El público enloquece de emoción'
+      }
+    };
+
+    const cfg = configs[type] || configs.plan;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'celebration-overlay';
+    overlay.innerHTML = `
+      <div class="celeb-backdrop"></div>
+      <div class="celeb-confetti-layer"></div>
+      <div class="celeb-card celeb-anim-${cfg.anim}">
+        <div class="celeb-big-emoji">${cfg.emoji}</div>
+        <div class="celeb-anim-area" id="celeb-anim-area"></div>
+        <div class="celeb-title">${cfg.title}</div>
+        <div class="celeb-subtitle">${subtitle ? subtitle : cfg.text}</div>
+        <div class="celeb-stars-row">✦ ✧ ✦ ✧ ✦</div>
       </div>
     `;
-  }).join('');
-}
 
-function estadoLabel(estado) {
-  const labels = { pendiente: '🗓️ Planeado', en_curso: '✈️ En curso', completado: '✅ Completado' };
-  return labels[estado] || estado;
-}
+    document.body.appendChild(overlay);
+    launchConfetti(overlay.querySelector('.celeb-confetti-layer'), 50);
 
-function openViajeModal() {
-  document.getElementById('viaje-destino').value = '';
-  document.getElementById('viaje-fecha').value = '';
-  document.getElementById('viaje-notas').value = '';
-  openModal('viaje-modal');
-}
+    // Inject specific animation
+    const animArea = overlay.querySelector('#celeb-anim-area');
+    if (animArea) injectAnim(type, animArea);
 
-async function saveViaje() {
-  const destino = document.getElementById('viaje-destino').value.trim();
-  if (!destino) { alert('El destino es obligatorio'); return; }
+    setTimeout(() => {
+      if (!overlay.parentNode) return;
+      overlay.style.transition = 'opacity 0.6s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 700);
+    }, 3200);
 
-  const btn = document.querySelector('#viaje-modal .btn-primary');
-  btn.disabled = true; btn.textContent = 'Guardando…';
-
-  const data = {
-    destino,
-    fecha:    document.getElementById('viaje-fecha').value || '',
-    notas:    document.getElementById('viaje-notas').value.trim(),
-    estado:   'pendiente',
-    lat:      null,
-    lng:      null,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  const docRef = await db.collection('viajes').add(data);
-  closeModal('viaje-modal');
-  btn.disabled = false; btn.textContent = 'Guardar';
-
-  geocode(destino).then(coords => {
-    if (coords) docRef.update({ lat: coords.lat, lng: coords.lng });
-  });
-}
-
-async function deleteViaje(id) {
-  if (!confirm('¿Eliminar este viaje y todo su diario?')) return;
-  const dias = await db.collection('viajes').doc(id).collection('dias').get();
-  const batch = db.batch();
-  dias.forEach(d => batch.delete(d.ref));
-  batch.delete(db.collection('viajes').doc(id));
-  await batch.commit();
-}
-
-async function empezarViaje(id, destino) {
-  showViajeStartAnimation(destino);
-  await db.collection('viajes').doc(id).update({
-    estado: 'en_curso',
-    fechaInicio: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-function showViajeStartAnimation(destino) {
-  showEpicViajeAnimation(destino);
-}
-
-// ===== DIARIO =====
-let diasListener = null;
-
-function openDiario(viajeId) {
-  currentViajeId = viajeId;
-  const viaje = viajesData[viajeId];
-  if (!viaje) return;
-
-  document.getElementById('diario-destino-title').textContent = viaje.destino;
-  const badge = document.getElementById('diario-estado-badge');
-  badge.textContent = estadoLabel(viaje.estado);
-  badge.className = `viaje-badge ${viaje.estado}`;
-
-  const actions = document.getElementById('diario-actions');
-  viaje.estado === 'en_curso' ? actions.classList.remove('hidden') : actions.classList.add('hidden');
-
-  document.getElementById('viajes-main-view').classList.add('hidden');
-  document.getElementById('viaje-diario-view').classList.remove('hidden');
-
-  if (diasListener) diasListener();
-  diasListener = db.collection('viajes').doc(viajeId).collection('dias')
-    .orderBy('num', 'asc')
-    .onSnapshot(snapshot => {
-      const dias = [];
-      snapshot.forEach(doc => dias.push({ id: doc.id, ...doc.data() }));
-      renderDias(dias);
+    overlay.addEventListener('click', () => {
+      overlay.style.transition = 'opacity 0.3s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
     });
-}
-
-function closeDiario() {
-  if (diasListener) { diasListener(); diasListener = null; }
-  currentViajeId = null;
-  document.getElementById('viaje-diario-view').classList.add('hidden');
-  document.getElementById('viajes-main-view').classList.remove('hidden');
-}
-
-function renderDias(dias) {
-  const el = document.getElementById('diario-days-list');
-  if (!dias.length) {
-    const viaje = viajesData[currentViajeId];
-    const esEnCurso = viaje && viaje.estado === 'en_curso';
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📖</div><p>${esEnCurso ? 'El diario está esperando vuestras aventuras…' : 'Este diario está vacío.'}</p></div>`;
-    return;
+  } catch(e) {
+    console.warn('Celebration error:', e);
   }
+}
 
-  el.innerHTML = dias.map(dia => {
-    const fotos = (dia.fotos || []).filter(f => f && f.trim());
-    const fotosHtml = fotos.length
-      ? `<div class="dia-fotos-grid">${fotos.map(f => `<div class="dia-foto"><img src="${escHtml(f)}" loading="lazy" alt="foto"></div>`).join('')}</div>`
-      : '';
-
-    const viaje = viajesData[currentViajeId];
-    const esEnCurso = viaje && viaje.estado === 'en_curso';
-    const editBtn = esEnCurso ? `<button class="icon-btn" onclick="editDia('${dia.id}',${dia.num})">✏️</button>` : '';
-
-    return `
-      <div class="dia-card">
-        <div class="dia-card-header">
-          <div>
-            <div class="dia-num-label">Día ${dia.num}</div>
-            <div class="dia-titulo">${escHtml(dia.titulo || 'Sin título')}</div>
-          </div>
-          ${editBtn}
+function injectAnim(type, container) {
+  const anims = {
+    plan: `
+      <div class="anim-diana">
+        <div class="diana-ring r1"></div>
+        <div class="diana-ring r2"></div>
+        <div class="diana-ring r3"></div>
+        <div class="diana-ring r4"></div>
+        <div class="diana-center"></div>
+        <div class="diana-dart">🎯</div>
+      </div>`,
+    restaurante: `
+      <div class="anim-clink">
+        <span class="copa copa-left">🍷</span>
+        <span class="copa copa-right">🍷</span>
+        <span class="clink-spark">✨</span>
+      </div>`,
+    ruta: `
+      <div class="anim-summit">
+        <div class="summit-mountain">⛰️</div>
+        <div class="summit-figures">
+          <span class="figure-boy">🧗</span>
+          <span class="summit-flag">🚩</span>
+          <span class="figure-girl">🧗‍♀️</span>
         </div>
-        ${(dia.notas || fotosHtml) ? `
-        <div class="dia-body">
-          ${dia.notas ? `<div class="dia-notas">${escHtml(dia.notas)}</div>` : ''}
-          ${fotosHtml}
-        </div>` : ''}
+      </div>`,
+    peli: `
+      <div class="anim-cinema">
+        <div class="cinema-screen">🎬</div>
+        <div class="cinema-audience">
+          <span class="aud-person">👏</span>
+          <span class="aud-person">👏</span>
+          <span class="aud-person">👏</span>
+          <span class="aud-person">👏</span>
+          <span class="aud-person">👏</span>
+        </div>
+      </div>`
+  };
+  container.innerHTML = anims[type] || '';
+}
+
+// ---- Epic Viaje Animation ----
+function showEpicViajeAnimation(destino) {
+  try {
+    const existing = document.getElementById('viaje-epic-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'viaje-epic-overlay';
+    overlay.innerHTML = `
+      <div class="epic-stars-layer"></div>
+      <div class="epic-content">
+        <div class="epic-plane">✈️</div>
+        <div class="epic-label">¡Habéis empezado el viaje a</div>
+        <h1 class="epic-destino">${destino}!</h1>
+        <div class="epic-sub">¡Que sea increíble! 🌍</div>
+        <div class="epic-stars-row">✦ ✧ ✦ ✧ ✦ ✧ ✦</div>
       </div>
     `;
-  }).join('');
-}
+    document.body.appendChild(overlay);
 
-function openDiaModal(editId = null, editNum = null) {
-  if (!currentViajeId) return;
-  document.getElementById('dia-viaje-id').value = currentViajeId;
-  document.getElementById('dia-edit-id').value = editId || '';
-  document.getElementById('dia-foto-input').value = '';
-  document.getElementById('dia-foto-preview').style.display = 'none';
-  document.getElementById('dia-foto-preview-img').src = '';
+    const layer = overlay.querySelector('.epic-stars-layer');
+    const epicSymbols = ['✦','✧','⋆','★','·','✩','♥','🌟','💫','⭐','✨'];
+    launchConfetti(layer, 70, epicSymbols);
+    setTimeout(() => launchConfetti(layer, 50, epicSymbols), 700);
+    setTimeout(() => launchConfetti(layer, 40, epicSymbols), 1500);
+    setTimeout(() => launchConfetti(layer, 30, epicSymbols), 2200);
 
-  if (editId) {
-    document.getElementById('dia-modal-title').textContent = `Editar Día ${editNum}`;
-  } else {
-    const count = document.getElementById('diario-days-list').querySelectorAll('.dia-card').length;
-    const nextNum = count + 1;
-    document.getElementById('dia-num-input').value = nextNum;
-    document.getElementById('dia-modal-title').textContent = `Día ${nextNum}`;
-    document.getElementById('dia-titulo').value = '';
-    document.getElementById('dia-notas').value = '';
+    setTimeout(() => {
+      if (!overlay.parentNode) return;
+      overlay.style.transition = 'opacity 0.8s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 900);
+    }, 4500);
+
+    overlay.addEventListener('click', () => {
+      overlay.style.transition = 'opacity 0.4s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 500);
+    });
+  } catch(e) {
+    console.warn('Epic viaje error:', e);
   }
-  openModal('dia-modal');
-}
-
-async function editDia(diaId, num) {
-  const doc = await db.collection('viajes').doc(currentViajeId).collection('dias').doc(diaId).get();
-  if (!doc.exists) return;
-  const d = doc.data();
-  document.getElementById('dia-edit-id').value = diaId;
-  document.getElementById('dia-viaje-id').value = currentViajeId;
-  document.getElementById('dia-num-input').value = num;
-  document.getElementById('dia-modal-title').textContent = `Editar Día ${num}`;
-  document.getElementById('dia-titulo').value = d.titulo || '';
-  document.getElementById('dia-notas').value = d.notas || '';
-  document.getElementById('dia-foto-input').value = '';
-  document.getElementById('dia-foto-preview').style.display = 'none';
-  openModal('dia-modal');
-}
-
-async function saveDia() {
-  const viajeId = document.getElementById('dia-viaje-id').value;
-  const editId  = document.getElementById('dia-edit-id').value;
-  const num     = parseInt(document.getElementById('dia-num-input').value) || 1;
-  const titulo  = document.getElementById('dia-titulo').value.trim();
-  const notas   = document.getElementById('dia-notas').value.trim();
-  const fileInput = document.getElementById('dia-foto-input');
-
-  const btn = document.querySelector('#dia-modal .btn-primary');
-  btn.disabled = true; btn.textContent = 'Guardando…';
-
-  let fotos = [];
-  if (editId) {
-    const existing = await db.collection('viajes').doc(viajeId).collection('dias').doc(editId).get();
-    fotos = existing.data()?.fotos || [];
-  }
-
-  if (fileInput.files && fileInput.files[0]) {
-    try {
-      btn.textContent = 'Subiendo foto…';
-      const url = await uploadFoto(fileInput.files[0]);
-      fotos.push(url);
-    } catch(e) {
-      alert('Error subiendo la foto');
-      btn.disabled = false; btn.textContent = 'Guardar';
-      return;
-    }
-  }
-
-  const data = { num, titulo, notas, fotos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-
-  if (editId) {
-    await db.collection('viajes').doc(viajeId).collection('dias').doc(editId).update(data);
-  } else {
-    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    await db.collection('viajes').doc(viajeId).collection('dias').add(data);
-  }
-
-  closeModal('dia-modal');
-  btn.disabled = false; btn.textContent = 'Guardar';
-}
-
-async function finalizarViaje() {
-  if (!currentViajeId) return;
-  if (!confirm('¿Finalizar el viaje? Ya no podréis añadir más días.')) return;
-  await db.collection('viajes').doc(currentViajeId).update({
-    estado: 'completado',
-    fechaFin: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  viajesData[currentViajeId].estado = 'completado';
-  const badge = document.getElementById('diario-estado-badge');
-  badge.textContent = estadoLabel('completado');
-  badge.className = 'viaje-badge completado';
-  document.getElementById('diario-actions').classList.add('hidden');
 }
