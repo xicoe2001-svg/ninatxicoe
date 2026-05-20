@@ -55,23 +55,48 @@ function switchTab(tab) {
 
 // ===== THEME =====
 function loadTheme() {
-  const saved = localStorage.getItem('ninatxicoe_theme') || 'dark-romantic';
+  const saved = localStorage.getItem('ninatxicoe_theme') || 'clara';
   const accent = localStorage.getItem('ninatxicoe_accent');
   applyTheme(saved);
   if (accent) applyCSSAccent(accent);
+  document.querySelectorAll('.theme-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.theme === saved);
+  });
 }
 
 function setTheme(name) {
   applyTheme(name);
   localStorage.setItem('ninatxicoe_theme', name);
+  localStorage.removeItem('ninatxicoe_accent');
+  document.documentElement.style.removeProperty('--accent');
+  document.documentElement.style.removeProperty('--accent-rgb');
   document.querySelectorAll('.theme-swatch').forEach(s => {
     s.classList.toggle('active', s.dataset.theme === name);
   });
 }
 
 function applyTheme(name) {
-  if (name === 'dark-romantic') document.documentElement.removeAttribute('data-theme');
+  if (name === 'clara') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', name);
+}
+
+// ===== STARS BACKGROUND =====
+function initStarsBg() {
+  const container = document.getElementById('stars-bg');
+  if (!container) return;
+  const symbols = ['✦', '✧', '⋆', '·', '✦', '★', '✩'];
+  for (let i = 0; i < 18; i++) {
+    const star = document.createElement('div');
+    star.className = 'star-particle';
+    star.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    star.style.left = Math.random() * 100 + 'vw';
+    star.style.top = Math.random() * 100 + 'vh';
+    star.style.fontSize = (8 + Math.random() * 10) + 'px';
+    star.style.animationDuration = (8 + Math.random() * 14) + 's';
+    star.style.animationDelay = (Math.random() * 10) + 's';
+    star.style.opacity = 0.2 + Math.random() * 0.4;
+    container.appendChild(star);
+  }
 }
 
 function setCustomAccent(val) {
@@ -435,6 +460,7 @@ function hideLoading() {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(hideLoading, 3000);
   try { loadTheme(); } catch(e) { console.warn(e); }
+  try { initStarsBg(); } catch(e) { console.warn(e); }
 
   // Delay map init — iOS needs layout to be painted first
   setTimeout(() => {
