@@ -160,6 +160,9 @@ function renderLugarList(tipo, items) {
     return;
   }
 
+  // Pendientes primero, completados al fondo
+  items.sort((a, b) => (a.completado ? 1 : 0) - (b.completado ? 1 : 0));
+
   el.innerHTML = items.map(l => {
     const completadoCls = l.completado ? 'completado' : '';
     const nombreCls = l.completado ? 'item-nombre tachado' : 'item-nombre';
