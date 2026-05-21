@@ -137,16 +137,18 @@ body {
 .star-particle {
   position: absolute;
   color: var(--accent);
-  font-size: 12px;
   opacity: 0;
   animation: starFloat linear infinite;
   user-select: none;
+  will-change: transform, opacity;
 }
 @keyframes starFloat {
-  0%   { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.5); }
-  10%  { opacity: 0.6; }
-  90%  { opacity: 0.3; }
-  100% { opacity: 0; transform: translateY(-100vh) rotate(360deg) scale(1); }
+  0%   { opacity: 0;                      transform: translateY(0)       rotate(0deg)   scale(0.6); }
+  8%   { opacity: var(--star-op, 0.4); }
+  45%  { opacity: var(--star-op, 0.4);    transform: translateY(-45vh)   rotate(180deg) scale(1); }
+  55%  { opacity: calc(var(--star-op, 0.4) * 0.5); }
+  92%  { opacity: var(--star-op, 0.4);    transform: translateY(-90vh)   rotate(320deg) scale(0.8); }
+  100% { opacity: 0;                      transform: translateY(-105vh)  rotate(360deg) scale(0.5); }
 }
 
 /* ===== LOADING SCREEN ===== */
