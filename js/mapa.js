@@ -48,21 +48,21 @@ function createPinIcon(tipo, completado) {
   const emoji = TIPO_ICON[tipo] || '📍';
   const cls = completado ? 'map-pin map-pin-completado' : 'map-pin';
   return L.divIcon({
-    html: `<div class="${cls}">${emoji}</div>`,
+    html: `<div class="${cls}"><span style="transform:rotate(45deg);font-size:18px">${emoji}</span></div>`,
     className: '',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -22]
+    iconSize: [40, 48],
+    iconAnchor: [20, 48],
+    popupAnchor: [0, -50]
   });
 }
 
 function createViajeCompletadoIcon() {
   return L.divIcon({
-    html: `<div class="map-pin map-pin-viaje-completado">✈️</div>`,
+    html: `<div class="map-pin map-pin-viaje-completado"><span style="transform:rotate(45deg);font-size:18px">✈️</span></div>`,
     className: '',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -22]
+    iconSize: [40, 48],
+    iconAnchor: [20, 48],
+    popupAnchor: [0, -50]
   });
 }
 
