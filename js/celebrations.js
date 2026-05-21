@@ -2,37 +2,46 @@
 
 const ANIM_BASE = './animations/';
 
-// ---- Shooting Star ----
-function launchShootingStar() {
-  const wrap = document.createElement('div');
-  const startY = 5 + Math.random() * 45;
+// ---- Shooting Stars — siempre dos, ella y tú ----
+// Verde claro = ella, Azul turquesa = tú
+function launchDoubleStar() {
   const angle = 18 + Math.random() * 16;
   const duration = 900 + Math.random() * 400;
-  wrap.style.cssText = `
-    position:fixed;top:${startY}vh;left:0;width:100vw;height:3px;
-    pointer-events:none;z-index:99999;
-    transform:rotate(${angle}deg) translate3d(0,0,0);
-    transform-origin:left center;overflow:visible;
-  `;
-  const star = document.createElement('div');
-  star.style.cssText = `
-    position:absolute;left:-260px;top:-3px;
-    width:240px;height:6px;border-radius:50%;
-    background:linear-gradient(to right,transparent,rgba(255,240,120,0.3),rgba(255,240,180,0.85),white,white);
-    box-shadow:0 0 8px 3px rgba(255,240,120,0.7),0 0 20px 6px rgba(255,200,80,0.4);
-    animation:streakMove ${duration}ms cubic-bezier(0.4,0,0.6,1) forwards;
-    -webkit-animation:streakMove ${duration}ms cubic-bezier(0.4,0,0.6,1) forwards;
-  `;
-  wrap.appendChild(star);
-  document.body.appendChild(wrap);
-  setTimeout(() => { if(wrap.parentNode) wrap.remove(); }, duration + 200);
+  const gap = 18 + Math.random() * 14; // separación vertical entre las dos
+
+  const stars = [
+    { startY: 8  + Math.random() * 30, color1: 'rgba(120,220,160,0.3)', color2: 'rgba(160,240,180,0.9)', glow1: 'rgba(100,210,140,0.7)', glow2: 'rgba(80,200,120,0.4)' },  // verde claro — ella
+    { startY: 8  + Math.random() * 30 + gap, color1: 'rgba(80,210,220,0.3)', color2: 'rgba(120,230,240,0.9)', glow1: 'rgba(60,200,220,0.7)', glow2: 'rgba(40,180,210,0.4)' }   // azul turquesa — tú
+  ];
+
+  stars.forEach(s => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `
+      position:fixed;top:${s.startY}vh;left:0;width:100vw;height:3px;
+      pointer-events:none;z-index:99999;
+      transform:rotate(${angle}deg) translate3d(0,0,0);
+      transform-origin:left center;overflow:visible;
+    `;
+    const streak = document.createElement('div');
+    streak.style.cssText = `
+      position:absolute;left:-260px;top:-3px;
+      width:${200 + Math.random()*80}px;height:5px;border-radius:50%;
+      background:linear-gradient(to right,transparent,${s.color1},${s.color2},white,white);
+      box-shadow:0 0 8px 3px ${s.glow1},0 0 18px 5px ${s.glow2};
+      animation:streakMove ${duration}ms cubic-bezier(0.4,0,0.6,1) forwards;
+      -webkit-animation:streakMove ${duration}ms cubic-bezier(0.4,0,0.6,1) forwards;
+    `;
+    wrap.appendChild(streak);
+    document.body.appendChild(wrap);
+    setTimeout(() => { if(wrap.parentNode) wrap.remove(); }, duration + 200);
+  });
 }
 
 function scheduleShootingStar() {
-  launchShootingStar();
+  launchDoubleStar();
   setTimeout(scheduleShootingStar, 6000 + Math.random() * 7000);
 }
-setTimeout(() => { launchShootingStar(); scheduleShootingStar(); }, 3000);
+setTimeout(() => { launchDoubleStar(); scheduleShootingStar(); }, 3000);
 
 // ---- Confetti ----
 function launchConfetti(container, count, symbols) {
