@@ -84,19 +84,32 @@ function applyTheme(name) {
 function initStarsBg() {
   const container = document.getElementById('stars-bg');
   if (!container) return;
-  const symbols = ['✦', '✧', '⋆', '·', '✦', '★', '✩'];
-  for (let i = 0; i < 45; i++) {
-    const star = document.createElement('div');
-    star.className = 'star-particle';
-    star.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-    star.style.left = Math.random() * 100 + 'vw';
-    star.style.top = Math.random() * 100 + 'vh';
-    star.style.fontSize = (8 + Math.random() * 10) + 'px';
-    star.style.animationDuration = (8 + Math.random() * 14) + 's';
-    star.style.animationDelay = (Math.random() * 10) + 's';
-    star.style.opacity = 0.2 + Math.random() * 0.4;
-    container.appendChild(star);
-  }
+
+  // Groups: tiny/dim, medium, bright, twinklers
+  const groups = [
+    { symbols:['·','·','·','.'], count:30, size:[4,7],   opacity:[0.1,0.25], dur:[14,22] },
+    { symbols:['⋆','✧','·'],     count:25, size:[7,11],  opacity:[0.2,0.35], dur:[10,18] },
+    { symbols:['✦','✧','⋆'],     count:20, size:[9,14],  opacity:[0.3,0.55], dur:[8,14]  },
+    { symbols:['✦','★','✩'],     count:15, size:[11,16], opacity:[0.5,0.8],  dur:[6,11]  },
+  ];
+
+  groups.forEach(g => {
+    for (let i = 0; i < g.count; i++) {
+      const star = document.createElement('div');
+      star.className = 'star-particle';
+      star.textContent = g.symbols[Math.floor(Math.random() * g.symbols.length)];
+      star.style.left = Math.random() * 100 + 'vw';
+      star.style.top = Math.random() * 120 + 'vh';
+      const size = g.size[0] + Math.random() * (g.size[1] - g.size[0]);
+      star.style.fontSize = size + 'px';
+      const dur = g.dur[0] + Math.random() * (g.dur[1] - g.dur[0]);
+      star.style.animationDuration = dur + 's';
+      star.style.animationDelay = -(Math.random() * dur) + 's';
+      const op = g.opacity[0] + Math.random() * (g.opacity[1] - g.opacity[0]);
+      star.style.setProperty('--star-op', op);
+      container.appendChild(star);
+    }
+  });
 }
 
 function setCustomAccent(val) {
