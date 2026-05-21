@@ -406,7 +406,7 @@ body {
 /* ===== HEADER ===== */
 #app-header {
   height: var(--header-h);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(253,248,240,0.85) 55%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.1) 0%, var(--header-bg) 55%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -500,8 +500,8 @@ body {
   transition: all 0.15s ease;
 }
 .map-pin:hover { transform: scale(1.15) translateY(-2px); }
-.map-pin-completado { border-color: var(--success); background: rgba(122,186,138,0.1); }
-.map-pin-viaje-completado { border-color: var(--accent3); background: rgba(196,168,212,0.1); }
+.map-pin-completado { border-color: var(--success); background: var(--card-bg); }
+.map-pin-viaje-completado { border-color: var(--accent3); background: var(--card-bg); }
 
 .leaflet-popup-content-wrapper {
   background: var(--card-bg) !important;
@@ -919,9 +919,7 @@ body {
 /* ===== BOTTOM NAV ===== */
 #bottom-nav {
   min-height: var(--nav-h);
-  background: rgba(253,248,240,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--nav-bg);
   border-top: 1px solid var(--border2);
   display: flex;
   flex-shrink: 0;
