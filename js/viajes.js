@@ -1,6 +1,7 @@
 // ===== VIAJES =====
 let currentViajeId = null;
 let viajesData = {};
+let currentDiaFotos = []; // fotos del día que se está editando
 
 function listenViajes() {
   db.collection('viajes').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
@@ -192,6 +193,8 @@ function openDiaModal(editId = null, editNum = null) {
   document.getElementById('dia-foto-input').value = '';
   document.getElementById('dia-foto-preview').style.display = 'none';
   document.getElementById('dia-foto-preview-img').src = '';
+  currentDiaFotos = [];
+  renderDiaFotosExistentes();
 
   if (editId) {
     document.getElementById('dia-modal-title').textContent = `Editar Día ${editNum}`;
@@ -210,6 +213,7 @@ async function editDia(diaId, num) {
   const doc = await db.collection('viajes').doc(currentViajeId).collection('dias').doc(diaId).get();
   if (!doc.exists) return;
   const d = doc.data();
+  currentDiaFotos = [...(d.fotos || [])];
   document.getElementById('dia-edit-id').value = diaId;
   document.getElementById('dia-viaje-id').value = currentViajeId;
   document.getElementById('dia-num-input').value = num;
@@ -218,7 +222,37 @@ async function editDia(diaId, num) {
   document.getElementById('dia-notas').value = d.notas || '';
   document.getElementById('dia-foto-input').value = '';
   document.getElementById('dia-foto-preview').style.display = 'none';
+  renderDiaFotosExistentes();
   openModal('dia-modal');
+}
+
+function renderDiaFotosExistentes() {
+  const container = document.getElementById('dia-fotos-existentes');
+  if (!container) return;
+  if (!currentDiaFotos.length) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = currentDiaFotos.map((url, i) => `
+    <div style="position:relative;display:inline-block;margin:4px;border-radius:10px;overflow:hidden;width:calc(50% - 8px);vertical-align:top">
+      <img src="${escHtml(url)}" style="width:100%;height:90px;object-fit:cover;display:block;border-radius:10px">
+      <button onclick="eliminarFotoDia(${i})" style="
+        position:absolute;top:4px;right:4px;
+        width:24px;height:24px;
+        background:rgba(0,0,0,0.6);
+        border:none;border-radius:50%;
+        color:white;font-size:13px;
+        cursor:pointer;display:flex;align-items:center;justify-content:center;
+        line-height:1;
+      ">✕</button>
+    </div>
+  `).join('');
+}
+
+function eliminarFotoDia(index) {
+  currentDiaFotos.splice(index, 1);
+  renderDiaFotosExistentes();
 }
 
 async function saveDia() {
@@ -232,11 +266,8 @@ async function saveDia() {
   const btn = document.querySelector('#dia-modal .btn-primary');
   btn.disabled = true; btn.textContent = 'Guardando…';
 
-  let fotos = [];
-  if (editId) {
-    const existing = await db.collection('viajes').doc(viajeId).collection('dias').doc(editId).get();
-    fotos = existing.data()?.fotos || [];
-  }
+  // Start with current edited photos (respects deletions)
+  let fotos = [...currentDiaFotos];
 
   if (fileInput.files && fileInput.files[0]) {
     try {
